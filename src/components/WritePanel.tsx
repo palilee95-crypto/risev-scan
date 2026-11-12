@@ -75,6 +75,16 @@ export function WritePanel({ item, onWritten, onSkip, onQuotaSaved, onNeedsAuth 
     }
   };
 
+  /**
+   * NFC Tools for iOS exposes no URL scheme (verified: nothing in Wakdev's docs,
+   * and the r/nfctools thread asking for one is unanswered), so a web page
+   * cannot launch it. This is the App Store listing and nothing else — the
+   * button says "Get NFC Tools" so it does not promise a handoff it cannot do.
+   */
+  const handleGetApp = () => {
+    window.open('https://apps.apple.com/app/nfc-tools/id1252962749', '_blank', 'noopener');
+  };
+
   return (
     <div className="card p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -128,26 +138,23 @@ export function WritePanel({ item, onWritten, onSkip, onQuotaSaved, onNeedsAuth 
         <>
           <ol className="mb-3 space-y-1.5 text-xs text-white/70">
             <li>1. Tap <b className="text-white">Copy link</b> below.</li>
-            <li>2. Open <b className="text-white">NFC Tools</b> → Write → Add a record → URL.</li>
+            <li>
+              2. Switch to <b className="text-white">NFC Tools</b> → Write → Add a record → URL.
+            </li>
             <li>3. Paste, then tap Write and hold the stand to the phone.</li>
           </ol>
           <div className="flex gap-2">
             <button type="button" className="btn-amber flex-1" onClick={handleCopy}>
               {copied ? 'Copied ✓' : 'Copy link'}
             </button>
-            <a
-              className="btn-ghost flex-1"
-              href="nfctools://"
-              onClick={(e) => {
-                // No documented URL scheme — if the app is not installed this
-                // would dead-end, so fall back to the App Store listing.
-                e.preventDefault();
-                window.location.href = 'https://apps.apple.com/app/nfc-tools/id1252962749';
-              }}
-            >
-              Open NFC Tools
-            </a>
+            <button type="button" className="btn-ghost flex-1" onClick={handleGetApp}>
+              Get NFC Tools
+            </button>
           </div>
+          <p className="mt-2 text-[10px] leading-relaxed text-white/35">
+            iOS gives web pages no way to open another app, so switch to NFC Tools
+            yourself — the link is already on your clipboard.
+          </p>
         </>
       )}
 
