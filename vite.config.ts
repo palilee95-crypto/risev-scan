@@ -7,13 +7,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon-64.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'RISEV SCAN — Stand Activation',
         short_name: 'RISEV SCAN',
         description: 'Scan activation QR codes and write them to RISEV NFC stands.',
-        theme_color: '#000000',
-        background_color: '#000000',
+        // Matches the web app's PWA chrome (white field, near-black ink).
+        theme_color: '#FFFFFF',
+        background_color: '#FFFFFF',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
