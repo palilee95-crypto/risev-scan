@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink text-surface font-sans antialiased;
+    /* Keep the layout clear of the notch and the home indicator. */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior-y: none;
+  }
+
+  /* iOS zooms the page when a <16px input is focused. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold
+           transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100;
+  }
+
+  .btn-amber {
+    @apply btn bg-amber text-ink;
+  }
+
+  .btn-ghost {
+    @apply btn border border-white/20 text-surface;
+  }
+
+  .card {
+    @apply rounded-2xl border border-white/10 bg-white/[0.04];
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide;
+  }
+}
