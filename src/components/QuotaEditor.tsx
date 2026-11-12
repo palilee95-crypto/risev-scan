@@ -63,23 +63,23 @@ export function QuotaEditor({ code, current, onSaved, onNeedsAuth }: Props) {
 
   if (!open) {
     return (
-      <div className="flex items-center justify-between rounded-lg bg-black/30 px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl bg-chip px-3.5 py-2.5">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Quota</p>
-          <p className="text-sm font-bold">
+          <p className="label">Quota</p>
+          <p className="mt-0.5 text-[15px] font-bold">
             {current === undefined ? (
-              <span className="text-white/40">unknown</span>
+              <span className="text-faint">unknown</span>
             ) : (
               <>
                 {current.toLocaleString()}
-                <span className="ml-1 text-[11px] font-normal text-white/40">members</span>
+                <span className="ml-1 text-[12px] font-medium text-muted">members</span>
               </>
             )}
           </p>
         </div>
         <button
           type="button"
-          className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-bold"
+          className="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] font-bold"
           onClick={() => setOpen(true)}
         >
           Change
@@ -89,10 +89,8 @@ export function QuotaEditor({ code, current, onSaved, onNeedsAuth }: Props) {
   }
 
   return (
-    <div className="rounded-lg border border-amber/40 bg-amber/[0.06] p-3">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-amber">
-        Quota for {code}
-      </p>
+    <div className="rounded-xl border border-amber bg-amber/10 p-3">
+      <p className="label mb-2 text-ink">Quota for {code}</p>
 
       <div className="mb-2 flex gap-1.5">
         {PRESETS.map((preset) => (
@@ -100,8 +98,8 @@ export function QuotaEditor({ code, current, onSaved, onNeedsAuth }: Props) {
             key={preset}
             type="button"
             onClick={() => setValue(String(preset))}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${
-              parsed === preset ? 'bg-amber text-ink' : 'bg-white/10 text-white/70'
+            className={`flex-1 rounded-lg py-2 text-[13px] font-bold ${
+              parsed === preset ? 'bg-ink text-surface' : 'bg-surface text-ink'
             }`}
           >
             {preset}
@@ -118,15 +116,15 @@ export function QuotaEditor({ code, current, onSaved, onNeedsAuth }: Props) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && void save()}
         placeholder="e.g. 1500"
-        className="mb-2 w-full rounded-lg bg-black/40 px-3 py-2 font-mono text-sm outline-none placeholder:text-white/25"
+        className="mb-2 w-full rounded-lg border border-line bg-surface px-3 py-2.5 font-mono text-[15px] outline-none placeholder:text-faint focus:border-ink"
       />
 
-      {error && <p className="mb-2 text-[11px] text-bad">{error}</p>}
+      {error && <p className="mb-2 text-[12px] text-bad">{error}</p>}
 
       <div className="flex gap-2">
         <button
           type="button"
-          className="btn-amber flex-1 py-2"
+          className="flex-1 rounded-lg bg-ink py-2.5 text-[14px] font-bold text-surface disabled:opacity-40"
           onClick={() => void save()}
           disabled={saving || !valid || !changed}
         >
@@ -134,7 +132,7 @@ export function QuotaEditor({ code, current, onSaved, onNeedsAuth }: Props) {
         </button>
         <button
           type="button"
-          className="btn-ghost px-3 py-2"
+          className="rounded-lg border border-line bg-surface px-3 py-2.5 text-[14px] font-bold"
           onClick={() => {
             setOpen(false);
             setValue(current ? String(current) : '');
@@ -145,7 +143,7 @@ export function QuotaEditor({ code, current, onSaved, onNeedsAuth }: Props) {
         </button>
       </div>
 
-      <p className="mt-2 text-[10px] leading-relaxed text-white/40">
+      <p className="mt-2 text-[11px] leading-relaxed text-muted">
         Changes the merchant&apos;s capacity immediately — the tag itself only
         carries the activation link.
       </p>

@@ -10,8 +10,7 @@
   }
 
   body {
-    @apply bg-ink text-surface font-sans antialiased;
-    /* Keep the layout clear of the notch and the home indicator. */
+    @apply bg-canvas text-ink font-sans antialiased;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     overscroll-behavior-y: none;
@@ -26,24 +25,28 @@
 }
 
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold
-           transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100;
+  /* Primary action: the wide yellow bar at the bottom of both mockups. */
+  .btn-primary {
+    @apply flex w-full items-center justify-center gap-2 rounded-2xl bg-amber px-5 py-4
+           text-[17px] font-extrabold text-ink transition active:scale-[0.99]
+           disabled:opacity-40 disabled:active:scale-100;
   }
 
-  .btn-amber {
-    @apply btn bg-amber text-ink;
-  }
-
-  .btn-ghost {
-    @apply btn border border-white/20 text-surface;
+  .btn-secondary {
+    @apply flex w-full items-center justify-center gap-2 rounded-2xl border border-line
+           bg-surface px-5 py-3.5 text-[15px] font-bold text-ink transition
+           active:scale-[0.99] disabled:opacity-40;
   }
 
   .card {
-    @apply rounded-2xl border border-white/10 bg-white/[0.04];
+    @apply rounded-card border border-line bg-surface;
   }
 
-  .pill {
-    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide;
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[12px] font-bold;
+  }
+
+  .label {
+    @apply text-[11px] font-bold uppercase tracking-[0.08em] text-faint;
   }
 }
