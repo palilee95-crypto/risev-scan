@@ -50,6 +50,25 @@ It reports three outcomes:
 
 A network failure shows **Unverified**, never a false "ready".
 
+## Sign-in is mandatory
+
+The app does not mount until a PocketBase superuser session exists. Nothing
+scans, writes, or calls PocketBase behind the login screen — the camera is not
+even opened. Sign out from the header to return to the gate.
+
+The session is kept by the PocketBase SDK in localStorage, so it survives a
+reload. If it expires mid-batch, the write panel prompts for re-auth rather
+than failing silently.
+
+## Verification is automatic
+
+Every scanned code is checked against the resolver **as it is scanned**, so the
+row is already marked Ready or Blocked by the time you look at it. The camera
+keeps running while the check resolves.
+
+**Verify all** is a recovery action, not the normal path: it retries rows that
+were scanned offline or whose check failed.
+
 ## Changing quota
 
 Quota is **not** on the NFC tag. The tag only carries
@@ -72,12 +91,8 @@ Tap **Change** next to the quota on the Write tab. Presets are 250 / 500 /
 ### This needs an admin sign-in
 
 `activation_codes.updateRule` is `null` (superuser-only), so changing quota
-requires a PocketBase superuser session. Tap **Admin** in the header once per
-device; the SDK keeps the token in localStorage.
-
-Scanning, verifying and writing all work **without** signing in — only quota
-edits need it. Without a session the editor fails closed and opens the sign-in
-sheet rather than silently doing nothing.
+requires a PocketBase superuser session — which the app now requires anyway to
+open at all.
 
 ## The queue
 

@@ -7,12 +7,32 @@ import { buzz, beep } from './lib/feedback';
 import { nfcSupport } from './lib/webNfc';
 import { QueueList } from './components/QueueList';
 import { WritePanel } from './components/WritePanel';
-import { AdminLogin } from './components/AdminLogin';
+import { AdminLogin, LoginGate } from './components/AdminLogin';
 import { currentAdmin, logoutAdmin } from './lib/pbAuth';
 
 type Tab = 'scan' | 'write';
 
 export default function App() {
+  const [admin, setAdmin] = useState(() => currentAdmin());
+
+  // Mandatory gate: nothing below mounts without a session, so the camera
+  // never starts and no PocketBase call is made behind a login screen.
+  if (!admin) {
+    return <LoginGate onSignedIn={() => setAdmin(currentAdmin())} />;
+  }
+
+  return (
+    <Workspace
+      adminEmail={admin.email}
+      onSignOut={() => {
+        logoutAdmin();
+        setAdmin(null);
+      }}
+    />
+  );
+}
+
+function Workspace({ adminEmail, onSignOut }: { adminEmail: string; onSignOut: () => void }) {
   const queue = useScanQueue();
   const [tab, setTab] = useState<Tab>('scan');
   const [activeCode, setActiveCode] = useState<string | null>(null);
@@ -22,9 +42,23 @@ export default function App() {
   const [checking, setChecking] = useState(false);
   const checkAbort = useRef<AbortController | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [admin, setAdmin] = useState(() => currentAdmin());
 
   const support = nfcSupport();
+
+  /**
+   * Verify one code in the background.
+   *
+   * Runs per scan rather than in a batch, so the row is already marked
+   * Ready/Blocked by the time the operator looks at it. Failures are silent:
+   * the row simply stays Unverified and can be retried with "Verify all".
+   */
+  const verifyOne = useCallback(
+    async (code: string) => {
+      const check = await checkCode(code);
+      queue.setCheck(code, check);
+    },
+    [queue],
+  );
 
   const handleDecode = useCallback(
     (text: string) => {
@@ -41,9 +75,11 @@ export default function App() {
         beep('ok');
         setLastAdded(parsed.code);
         setTimeout(() => setLastAdded((c) => (c === parsed.code ? null : c)), 1600);
+        // Fire and forget: the camera keeps running while this resolves.
+        void verifyOne(parsed.code);
       }
     },
-    [queue],
+    [queue, verifyOne],
   );
 
   const scanner = useQrScanner(handleDecode);
@@ -74,8 +110,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  // Validate every unchecked row once, sequentially, so a 33-code batch does
-  // not fire 33 parallel requests at the resolver.
+  // Retry anything still unverified (offline at scan time, or a failed check).
+  // Codes are verified on scan, so this is a recovery action, not the norm.
   const runChecks = useCallback(async () => {
     const pending = queue.items.filter((i) => !i.check && !i.writtenAt);
     if (pending.length === 0) return;
@@ -102,9 +138,10 @@ export default function App() {
       return;
     }
     setScanError(null);
-    queue.add(parsed.code);
+    const result = queue.add(parsed.code);
     setManual('');
     buzz(30);
+    if (result === 'added') void verifyOne(parsed.code);
   };
 
   const activeItem = queue.items.find((i) => i.code === activeCode) ?? queue.nextWritable;
@@ -140,17 +177,11 @@ export default function App() {
           <p className="text-[10px] uppercase tracking-wider text-white/40">written</p>
           <button
             type="button"
-            className="mt-1 text-[10px] font-bold text-white/40 underline-offset-2 hover:underline"
-            onClick={() => {
-              if (admin) {
-                logoutAdmin();
-                setAdmin(null);
-              } else {
-                setLoginOpen(true);
-              }
-            }}
+            className="mt-1 max-w-[9rem] truncate text-[10px] font-bold text-white/40 underline-offset-2 hover:underline"
+            title={adminEmail}
+            onClick={onSignOut}
           >
-            {admin ? 'Sign out' : 'Admin'}
+            Sign out
           </button>
         </div>
       </header>
@@ -331,7 +362,7 @@ export default function App() {
       <AdminLogin
         open={loginOpen}
         onClose={() => setLoginOpen(false)}
-        onSignedIn={() => setAdmin(currentAdmin())}
+        onSignedIn={() => setLoginOpen(false)}
       />
     </div>
   );
