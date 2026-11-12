@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { nfcSupport, writeUrlToTag } from '../lib/webNfc';
 import { buzz, beep } from '../lib/feedback';
-import type { QueueItem } from '../lib/useScanQueue';
+import { itemState, type QueueItem } from '../lib/useScanQueue';
 import { QuotaEditor } from './QuotaEditor';
 
 interface Props {
@@ -10,6 +10,8 @@ interface Props {
   onSkip: () => void;
   onQuotaSaved: (code: string, quota: number) => void;
   onNeedsAuth: () => void;
+  /** Return to the scanner for the next parcel. */
+  onScanNext: () => void;
 }
 
 type Phase = 'idle' | 'writing' | 'done' | 'failed';
@@ -21,12 +23,23 @@ type Phase = 'idle' | 'writing' | 'done' | 'failed';
  * iOS: no Web NFC exists, so the honest flow is copy → open NFC Tools → paste.
  * The panel says which one you are in instead of pretending they are the same.
  */
-export function WritePanel({ item, onWritten, onSkip, onQuotaSaved, onNeedsAuth }: Props) {
+export function WritePanel({
+  item,
+  onWritten,
+  onSkip,
+  onQuotaSaved,
+  onNeedsAuth,
+  onScanNext,
+}: Props) {
   const support = nfcSupport();
   const [phase, setPhase] = useState<Phase>('idle');
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // A code that verification already rejected must never be written: a stand
+  // pointing at a sold or nonexistent code is worse than an unwritten stand.
+  const blocked = itemState(item) === 'blocked';
 
   // A new code resets the panel — otherwise a stale "Written" would sit under
   // the next stand's code and invite a double-write.
@@ -101,60 +114,89 @@ export function WritePanel({ item, onWritten, onSkip, onQuotaSaved, onNeedsAuth 
         {item.url}
       </p>
 
-      <div className="mb-3">
-        <QuotaEditor
-          code={item.code}
-          current={item.quotaOverride ?? item.check?.quota}
-          onSaved={(quota) => onQuotaSaved(item.code, quota)}
-          onNeedsAuth={onNeedsAuth}
-        />
-      </div>
-
-      {support === 'supported' ? (
-        <>
-          <button
-            type="button"
-            className="btn-amber w-full"
-            onClick={handleWrite}
-            disabled={phase === 'writing' || phase === 'done'}
-          >
-            {phase === 'writing' ? 'Waiting for tag…' : phase === 'done' ? 'Written ✓' : 'Write to stand'}
+      {blocked ? (
+        <div className="mb-3 rounded-lg border border-bad/40 bg-bad/10 p-3">
+          <p className="text-xs font-bold text-bad">Do not write this stand</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-white/60">
+            {item.check?.detail ?? 'This code failed verification.'} Writing it
+            would produce a stand that activates nothing.
+          </p>
+          <button type="button" className="btn-amber mt-3 w-full" onClick={onScanNext}>
+            Scan next parcel
           </button>
-          {phase === 'writing' && (
-            <button
-              type="button"
-              className="btn-ghost mt-2 w-full"
-              onClick={() => {
-                abortRef.current?.abort();
-                setPhase('idle');
-                setMessage(null);
-              }}
-            >
-              Cancel
-            </button>
-          )}
-        </>
+        </div>
       ) : (
         <>
-          <ol className="mb-3 space-y-1.5 text-xs text-white/70">
-            <li>1. Tap <b className="text-white">Copy link</b> below.</li>
-            <li>
-              2. Switch to <b className="text-white">NFC Tools</b> → Write → Add a record → URL.
-            </li>
-            <li>3. Paste, then tap Write and hold the stand to the phone.</li>
-          </ol>
-          <div className="flex gap-2">
-            <button type="button" className="btn-amber flex-1" onClick={handleCopy}>
-              {copied ? 'Copied ✓' : 'Copy link'}
-            </button>
-            <button type="button" className="btn-ghost flex-1" onClick={handleGetApp}>
-              Get NFC Tools
-            </button>
+          <div className="mb-3">
+            <QuotaEditor
+              code={item.code}
+              current={item.quotaOverride ?? item.check?.quota}
+              onSaved={(quota) => onQuotaSaved(item.code, quota)}
+              onNeedsAuth={onNeedsAuth}
+            />
           </div>
-          <p className="mt-2 text-[10px] leading-relaxed text-white/35">
-            iOS gives web pages no way to open another app, so switch to NFC Tools
-            yourself — the link is already on your clipboard.
-          </p>
+
+          {support === 'supported' ? (
+            <>
+              <button
+                type="button"
+                className="btn-amber w-full"
+                onClick={handleWrite}
+                disabled={phase === 'writing' || phase === 'done'}
+              >
+                {phase === 'writing'
+                  ? 'Waiting for tag…'
+                  : phase === 'done'
+                    ? 'Written ✓'
+                    : 'Write to stand'}
+              </button>
+              {phase === 'writing' && (
+                <button
+                  type="button"
+                  className="btn-ghost mt-2 w-full"
+                  onClick={() => {
+                    abortRef.current?.abort();
+                    setPhase('idle');
+                    setMessage(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+              {phase === 'done' && (
+                <button type="button" className="btn-ghost mt-2 w-full" onClick={onScanNext}>
+                  Scan next parcel
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <ol className="mb-3 space-y-1.5 text-xs text-white/70">
+                <li>
+                  1. Tap <b className="text-white">Copy link</b> below.
+                </li>
+                <li>
+                  2. Switch to <b className="text-white">NFC Tools</b> → Write → Add a record → URL.
+                </li>
+                <li>3. Paste, then tap Write and hold the stand to the phone.</li>
+              </ol>
+              <div className="flex gap-2">
+                <button type="button" className="btn-amber flex-1" onClick={handleCopy}>
+                  {copied ? 'Copied ✓' : 'Copy link'}
+                </button>
+                <button type="button" className="btn-ghost flex-1" onClick={handleGetApp}>
+                  Get NFC Tools
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] leading-relaxed text-white/35">
+                iOS gives web pages no way to open another app, so switch to NFC Tools
+                yourself — the link is already on your clipboard.
+              </p>
+              <button type="button" className="btn-ghost mt-2 w-full" onClick={onScanNext}>
+                Done — scan next parcel
+              </button>
+            </>
+          )}
         </>
       )}
 

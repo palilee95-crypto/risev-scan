@@ -77,6 +77,10 @@ function Workspace({ adminEmail, onSignOut }: { adminEmail: string; onSignOut: (
         setTimeout(() => setLastAdded((c) => (c === parsed.code ? null : c)), 1600);
         // Fire and forget: the camera keeps running while this resolves.
         void verifyOne(parsed.code);
+        // One parcel, one stand: go straight to writing this code. The write
+        // panel disables itself if verification comes back blocked.
+        setActiveCode(parsed.code);
+        setTab('write');
       }
     },
     [queue, verifyOne],
@@ -141,16 +145,27 @@ function Workspace({ adminEmail, onSignOut }: { adminEmail: string; onSignOut: (
     const result = queue.add(parsed.code);
     setManual('');
     buzz(30);
-    if (result === 'added') void verifyOne(parsed.code);
+    if (result === 'added') {
+      void verifyOne(parsed.code);
+      // Same one-parcel-one-stand loop as a camera scan.
+      setActiveCode(parsed.code);
+      setTab('write');
+    }
   };
 
   const activeItem = queue.items.find((i) => i.code === activeCode) ?? queue.nextWritable;
 
   const handleWritten = (code: string) => {
     queue.markWritten(code);
-    // Advance to the next writable row so the operator never has to hunt.
-    const next = queue.items.find((i) => i.code !== code && itemState(i) !== 'written' && itemState(i) !== 'blocked');
-    setActiveCode(next?.code ?? null);
+    // Stay on the write panel so the operator sees the confirmation and can
+    // tap "Scan next parcel" — jumping back automatically would hide the
+    // success and risk writing the same stand twice.
+  };
+
+  /** Return to the scanner for the next parcel. */
+  const handleScanNext = () => {
+    setActiveCode(null);
+    setTab('scan');
   };
 
   const handleSkip = () => {
@@ -297,6 +312,7 @@ function Workspace({ adminEmail, onSignOut }: { adminEmail: string; onSignOut: (
                 onSkip={handleSkip}
                 onQuotaSaved={queue.setQuota}
                 onNeedsAuth={() => setLoginOpen(true)}
+                onScanNext={handleScanNext}
               />
             ) : (
               <div className="card p-6 text-center">

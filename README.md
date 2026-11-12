@@ -50,6 +50,20 @@ It reports three outcomes:
 
 A network failure shows **Unverified**, never a false "ready".
 
+## The loop: one parcel, one stand
+
+Scanning a code jumps **straight to the write panel** for that code — no tab
+tap. After writing, **Scan next parcel** returns to the camera for the next
+sticker.
+
+```
+scan QR  →  write panel (code + quota + copy)  →  write  →  scan next
+```
+
+A code that verification rejected shows **"Do not write this stand"** instead
+of the write controls: a stand pointing at a sold or nonexistent code is worse
+than an unwritten stand.
+
 ## Sign-in is mandatory
 
 The app does not mount until a PocketBase superuser session exists. Nothing
